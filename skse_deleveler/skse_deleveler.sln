@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2003
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "skse_deleveler", "skse_deleveler.vcxproj", "{C9A44290-AAB9-467F-85D0-DB38F355154F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C9A44290-AAB9-467F-85D0-DB38F355154F}.Debug|x64.ActiveCfg = Debug|x64
+		{C9A44290-AAB9-467F-85D0-DB38F355154F}.Debug|x64.Build.0 = Debug|x64
+		{C9A44290-AAB9-467F-85D0-DB38F355154F}.Release|x64.ActiveCfg = Release|x64
+		{C9A44290-AAB9-467F-85D0-DB38F355154F}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C79C4143-B40F-4F12-8A57-FB4B2338DF34}
+	EndGlobalSection
+EndGlobal
