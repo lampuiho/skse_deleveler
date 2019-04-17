@@ -154,9 +154,9 @@ unsigned short SSEDeleveler::GetEncounterZoneLevelHooked(BGSEncounterZone* zone)
 }
 
 unsigned short SSEDeleveler::GetScaledActorLevelHooked(TESActorBaseData *pActorData) {
-	if (pActorData == &((TESNPC*)((*(g_thePlayer.GetPtr()))->baseForm))->actorData){
-		return GeneratePoisLevel();
-	}
+	//if (pActorData == &((TESNPC*)((*(g_thePlayer.GetPtr()))->baseForm))->actorData){
+	//	return GeneratePoisLevel();
+	//}
 	auto result = pActorData->level;
 	if ((pActorData->flags >> 7 & 1) != 0) {
 		float mult = result * .001f; //to be used to multiply avg as skewed mean
@@ -174,7 +174,5 @@ unsigned short SSEDeleveler::GetScaledActorLevelHooked(TESActorBaseData *pActorD
 		result = GenerateNormLevel(maxL, minL);
 		result *= mult;
 	}
-	else
-		result = CapFloatLevel(result);
 	return result;
 }
