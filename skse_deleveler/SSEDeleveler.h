@@ -10,8 +10,14 @@ class SSEDeleveler
 {
 	uintptr_t baseAddress;
 	uintptr_t moduleLength;
+	GetEncounterZoneLevel GetEncounterZoneLevelPtr;
+	GetScaledActorLevel GetScaledActorLevelPtr;
+	uintptr_t GetEZSavedLvPtr;
+	uintptr_t GetLevItemEnLv[3];
+	uintptr_t GetPlLv[3];
+	uintptr_t GetPlItemLv[2];
 
-	int Hook(GetEncounterZoneLevel, GetScaledActorLevel);
+	int Hook();
 	int FindSSEBase();
 
 public:
@@ -19,6 +25,9 @@ public:
 		errFindModule,
 		errFindGetEncounterZoneLevel,
 		errFindGetScaledActorLevel,
+		errFindGetEZSavedLv,
+		errFindGetLevItemEnLv,
+		errFindGetPlLv,
 		errAllocateHooker,
 		errHookGetEncounterZoneLevel,
 		errHookGetScaledActorLevel,
