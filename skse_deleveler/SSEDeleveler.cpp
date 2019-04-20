@@ -55,9 +55,23 @@ static unsigned short GeneratePoisLevel(unsigned short minLevel){
 	return CapFloatLevel(level);
 }
 
-static unsigned short GenerateNormLevel(float maxL, float minL) {
+static unsigned short GenerateNormLevel(float maxL, float minL, float mult) {
 	if (maxL == 0)
 		return CapFloatLevel((float)(ComputePoisson(mult *(float)(AVGLevel + minL)) + 1));
+	else if (minL == 0)
+		minL = 1;
+	if (maxL <= minL) {
+		maxL = min(minL * exp((100. - minL) / 144.), 99);
+	}
+	float mean = ComputeNormMean(maxL, minL);
+	float stdd = (maxL - minL) / 6.f;
+	auto level = GenGaussRandFloat(mean, stdd);
+	return CapFloatLevel(level);
+}
+
+static unsigned short GenerateNormLevel(float maxL, float minL) {
+	if (maxL == 0)
+		return CapFloatLevel((float)(ComputePoisson((float)(AVGLevel + minL)) + 1));
 	else if (minL == 0)
 		minL = 1;
 	if (maxL <= minL) {
@@ -89,7 +103,7 @@ static unsigned short GetRandLevel(TESActorBaseData *pActorData) {
 	float minL = pActorData->minLevel;
 	float maxL = pActorData->maxLevel;
 
-	auto result = GenerateNormLevel(maxL, minL);
+	auto result = GenerateNormLevel(maxL, minL, mult);
 	result *= mult;
 
 	if ((pActorData->flags >> kFlag_Unique & 1) != 0){
