@@ -2,6 +2,7 @@
 
 class BGSEncounterZone;
 class TESActorBaseData;
+class Actor;
 
 typedef unsigned short(*GetEncounterZoneLevel)(BGSEncounterZone* zone);
 typedef unsigned short(*GetScaledActorLevel)(TESActorBaseData* pActorData);
@@ -37,5 +38,6 @@ public:
 
 	int Init();
 	static unsigned short __fastcall GetEncounterZoneLevelHooked(BGSEncounterZone* zone);
-	static unsigned short __fastcall GetScaledActorLevelHooked(TESActorBaseData *pActorData);
+	static unsigned short __fastcall GetActorDataLevelHooked(TESActorBaseData *pActorData);
+	static unsigned short __fastcall GetActorLevelHooked(Actor *pRef);
 };

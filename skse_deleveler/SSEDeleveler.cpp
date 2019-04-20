@@ -56,6 +56,13 @@ static unsigned short GeneratePoisLevel(unsigned short minLevel){
 }
 
 static unsigned short GenerateNormLevel(float maxL, float minL) {
+	if (maxL == 0)
+		return CapFloatLevel((float)(ComputePoisson(mult *(float)(AVGLevel + minL)) + 1));
+	else if (minL == 0)
+		minL = 1;
+	if (maxL <= minL) {
+		maxL = min(minL * exp((100. - minL) / 144.), 99);
+	}
 	float mean = ComputeNormMean(maxL, minL);
 	float stdd = (maxL - minL) / 6.f;
 	auto level = GenGaussRandFloat(mean, stdd);
@@ -76,29 +83,32 @@ static void WriteNOP(uintptr_t start, byte nByte) {
 }
 
 static unsigned short GetRandLevel(TESActorBaseData *pActorData) {
+	//ASSERT((pActorData->flags >> kFlag_PCLevelMult & 1) != 0);
+	
 	float mult = pActorData->level * .001f; //to be used to multiply avg as skewed mean
 	float minL = pActorData->minLevel;
 	float maxL = pActorData->maxLevel;
 
-	if (minL == 0 && maxL == 0)
-		return CapFloatLevel((float)(ComputePoisson(mult *(float)AVGLevel) + 1));
-	else if (minL == 0)
-		minL = 1;
-	if (maxL <= minL) {
-		maxL = min(minL * exp((100. - minL) / 144.), 99);
-	}
-
 	auto result = GenerateNormLevel(maxL, minL);
 	result *= mult;
+
+	if ((pActorData->flags >> kFlag_Unique & 1) != 0){
+		pActorData->flags &= ~(1UL << kFlag_PCLevelMult);
+		pActorData->level = result;
+	}
+
 	return result;
 }
 
 static unsigned short GetFluctuatedActorLevel(TESActorBaseData *pActorData) {
-	auto result = pActorData->level;
-	if ((pActorData->flags >> 7 & 1) != 0)
+	if ((pActorData->flags >> kFlag_PCLevelMult & 1) != 0)
 		return GetRandLevel(pActorData);
 	else
-		return CapFloatLevel(result);
+		return CapFloatLevel(pActorData->level);
+}
+
+static unsigned short GetNonUniqueActorLevel(Actor* pRef) {
+	return 1;
 }
 
 static unsigned short GetPlayerEncLevelHooked(Actor* pPlayer) {
@@ -116,20 +126,28 @@ unsigned short SSEDeleveler::GetEncounterZoneLevelHooked(BGSEncounterZone* zone)
 
 	byte minLevel = zone->minLevel;
 	byte maxLevel = zone->maxLevel;
-	if (maxLevel == 0)
-		result = GeneratePoisLevel(minLevel);
-	else
-		result = GenerateNormLevel(maxLevel, minLevel);
+	result = GenerateNormLevel(maxLevel, minLevel);
 
 	return result;
 }
 
-unsigned short SSEDeleveler::GetScaledActorLevelHooked(TESActorBaseData *pActorData) {
+unsigned short SSEDeleveler::GetActorDataLevelHooked(TESActorBaseData *pActorData) {
 	auto result = pActorData->level;
-	if ((pActorData->flags >> 7 & 1) != 0) {
+	if ((pActorData->flags >> kFlag_PCLevelMult & 1) != 0) {
 		result = GetRandLevel(pActorData);
 	}
 	return result;
+}
+
+unsigned short SSEDeleveler::GetActorLevelHooked(Actor* pRef) {
+	auto base = (TESNPC*)pRef->baseForm;
+	if ((base->actorData.flags >> kFlag_PCLevelMult & 1) != 0)
+		if ((base->actorData.flags >> kFlag_Unique & 1) != 0)
+			return GetRandLevel(&base->actorData);
+		else
+			return GetNonUniqueActorLevel(pRef);
+	else
+		return base->actorData.level;
 }
 
 const char* SSEDeleveler::ErrorMessage[SSEDeleveler::NumError] = { "errFindModule", "errFindGetEncounterZoneLevel", "errFindGetScaledActorLevel",
@@ -185,7 +203,7 @@ int SSEDeleveler::Hook() {
 	TrampolineCode GetEncounterZoneLevelHookCode((uintptr_t)GetEncounterZoneLevelHooked);
 	SafeWriteBuf((uintptr_t)GetEncounterZoneLevelPtr, &GetEncounterZoneLevelHookCode, sizeof(TrampolineCode));
 
-	TrampolineCode GetScaledActorLevelHookCode((uintptr_t)GetScaledActorLevelHooked);
+	TrampolineCode GetScaledActorLevelHookCode((uintptr_t)GetActorDataLevelHooked);
 	SafeWriteBuf((uintptr_t)GetScaledActorLevelPtr, &GetScaledActorLevelHookCode, sizeof(TrampolineCode));
 
 	TramCallCode GetEZSavedLevelHookCode((uintptr_t)GetEZSavedLevelHooked,(UInt8)0x10);
