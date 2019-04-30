@@ -16,7 +16,7 @@ class SSEDeleveler
 	uintptr_t GetEZSavedLvPtr;
 	uintptr_t GetLevItemEnLv[3];
 	uintptr_t GetPlLv[3];
-	uintptr_t GetPlItemLv[2];
+	uintptr_t GetPlItemLv[4];
 
 	int Hook();
 	int FindSSEBase();

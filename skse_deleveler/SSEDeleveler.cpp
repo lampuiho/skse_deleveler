@@ -29,10 +29,17 @@ static const char* GetPlLvSig2 = "\x48\x8b\x0d\x00\x00\x00\x00\xe8\x00\x00\x00\x
 static const char* GetPlLvMask2 = "xxx????x????xxxx";
 static const size_t GetPlLvOff2 = 0x7;
 
-static const char* GetPlLvSig3 = "\xe8\x00\x00\x00\x00\x0f\xb7\xd0\x49\x8d\x4e\x30";
+static const char* GetPlLvSig3 = "\xe8\x00\x00\x00\x00\x0f\xb7\xd0\x49\x8d\x4e\x30"; //+19cbdd
 static const char* GetPlLvMask3 = "x????xxxxxxx";
-static const char* GetPlLvSig4 = "\xe8\x00\x00\x00\x00\x0f\xb7\xd0\x48\x8d\x4f\x30";
+static const char* GetPlLvSig4 = "\xe8\x00\x00\x00\x00\x0f\xb7\xd0\x48\x8d\x4f\x30"; //+377294
 static const char* GetPlLvMask4 = "x????xxxxxxx";
+
+static const char* GetPlLvSig5 = "\x0f\x5b\xf6\x44\x0f\x29\x44\x24\x60\xe8";
+static const char* GetPlLvMask5 = "xxxxxxxxxx";
+static const size_t GetPlLvOff5 = 0x9; //+19773b
+
+static const char* GetPlLvSig6 = "\xe8\x00\x00\x00\x00\x0f\xb7\xc8\x3b\xcb"; //+197811
+static const char* GetPlLvMask6 = "x????xxxxx";
 
 static float LevelFluctuator(float level) {
 	return level + GenGaussRandFloat(0., 2);
@@ -196,7 +203,7 @@ int SSEDeleveler::Hook() {
 		UInt64	dst;	// target
 		UInt8	escape = 0xff;	// FF
 		UInt8	modrm = 0xD0;	// D0
-		UInt8 jmp = 0x74;
+		UInt8 jmp = 0xeb;
 		UInt8 shrt = 0x10;
 
 		TramCallCode(uintptr_t _dst, UInt8 _shrt) : dst(_dst), shrt(_shrt) {	}
@@ -372,9 +379,12 @@ int SSEDeleveler::Init() {
 		return errFindGetLevItemEnLv;
 	GetPlLv[2] += GetPlLvOff2;
 
-	GetPlItemLv[0] = (uintptr_t)FindPattern((char*)startAddress, GetPlLvSig3, GetPlLvMask3, moduleLength);
+	GetPlItemLv[0] = (uintptr_t)FindPattern((char*)this->baseAddress, GetPlLvSig3, GetPlLvMask3, moduleLength);
 	GetPlItemLv[1] = (uintptr_t)FindPattern((char*)GetPlItemLv[0] + 50, GetPlLvSig4, GetPlLvMask4
 		, moduleLength + this->baseAddress - GetPlItemLv[0] - 50);
+	GetPlItemLv[2] = (uintptr_t)FindPattern((char*)this->baseAddress, GetPlLvSig5, GetPlLvMask5, moduleLength);
+	GetPlItemLv[2] += GetPlLvOff5;
+	GetPlItemLv[3] = (uintptr_t)FindPattern((char*)GetPlItemLv[2], GetPlLvSig6, GetPlLvMask6, moduleLength);
 
 #ifdef _DEBUG
 	char buf[30];

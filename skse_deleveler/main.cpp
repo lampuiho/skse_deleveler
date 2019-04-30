@@ -23,7 +23,7 @@ extern "C" {
 		// populate info structure
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = g_pluginName;
-		info->version = 0.1;
+		info->version = 0.01;
 
 		// store plugin handle so we can identify ourselves later
 		g_pluginHandle = skse->GetPluginHandle();
@@ -36,7 +36,7 @@ extern "C" {
 
 			return false;
 		}
-		else if (skse->runtimeVersion != RUNTIME_VERSION_1_5_73)
+		else if (skse->runtimeVersion < RUNTIME_VERSION_1_5_73)
 		{
 #ifdef _DEBUG
 			_MESSAGE("unsupported runtime version %08X", skse->runtimeVersion);
