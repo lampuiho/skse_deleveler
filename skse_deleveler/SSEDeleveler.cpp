@@ -225,7 +225,7 @@ void SSEDelevelerInit::ReadGlobalAddresses() {
 	sseDelevelerSingleton.lockLevel[kLockAdept] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x76)) + GetKeyLv[0] + 0x7a);
 	sseDelevelerSingleton.lockLevel[kLockExpert] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x89)) + GetKeyLv[0] + 0x8d);
 	sseDelevelerSingleton.lockLevel[kLockMaster] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x9e)) + GetKeyLv[0] + 0xa2);
-	sseDelevelerSingleton.pGetRefEncounterZoneLevel = (GetRefEncounterZoneLevel)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x24)) + GetKeyLv[0] + 0x29);
+	sseDelevelerSingleton.pGetRefEncounterZoneLevel = (GetRefEncounterZoneLevel)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x25)) + GetKeyLv[0] + 0x29);
 }
 
 int SSEDelevelerInit::Hook() {
