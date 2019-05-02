@@ -52,8 +52,8 @@ extern "C" {
 	}
 
 	bool SKSEPlugin_Load(const SKSEInterface * skse) {	// Called by SKSE to load this plugin
-		SSEDeleveler tmp;
-		int result = tmp.Init();
+		SSEDelevelerInit tmp;
+		int result = tmp();
 		if (result == 0) {
 #ifdef _DEBUG
 			_MESSAGE(g_pluginName);
@@ -69,7 +69,7 @@ extern "C" {
 			gLog.SetPrintLevel(IDebugLog::kLevel_Error);
 			gLog.SetLogLevel(IDebugLog::kLevel_DebugMessage);
 #endif
-			_ERROR(SSEDeleveler::ErrorMessage[result]);
+			_ERROR(SSEDelevelerInit::ErrorMessage[result]);
 		}
 		return false;
 	}

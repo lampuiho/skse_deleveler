@@ -22,9 +22,14 @@ static const char* GetEZSavedLvSig = "\x44\x0f\xb7\x40\x44"; //+0x2a6d9c
 static const char* GetEZSavedLvMask = "xxxxx";
 static const char* GetLevItemEnLvSig = "\xe8\x00\x00\x00\x00\xeb\x0c\x48\x85\xc9";
 static const char* GetLevItemEnLvMask = "x????xxxxx";
+
+static const char* GetKeyLvSig = "40 53 48 83 EC 20 0F B6 19";//+1349D0, +134A90
+static const char* GetKeyLvMask = "xxxxxxxxx";
+
 static const char* GetPlLvSig1 = "\x48\x8b\xc8\xe8\x00\x00\x00\x00\xeb\x0c"; //+134a02,+134ac2
 static const char* GetPlLvMask1 = "xxxx????xx";
 static const size_t GetPlLvOff1 = 0x11;
+
 static const char* GetPlLvSig2 = "\x48\x8b\x0d\x00\x00\x00\x00\xe8\x00\x00\x00\x00\x44\x0f\xb7\xc0"; //+0x2a6db1
 static const char* GetPlLvMask2 = "xxx????x????xxxx";
 static const size_t GetPlLvOff2 = 0x7;
@@ -40,6 +45,14 @@ static const size_t GetPlLvOff5 = 0x9; //+19773b
 
 static const char* GetPlLvSig6 = "\xe8\x00\x00\x00\x00\x0f\xb7\xc8\x3b\xcb"; //+197811
 static const char* GetPlLvMask6 = "x????xxxxx";
+
+SSEDeleveler sseDelevelerSingleton = SSEDeleveler();
+
+static struct ExtraLock {
+	UInt8 level;
+	void* key;
+	UInt8 flags;
+};
 
 static float LevelFluctuator(float level) {
 	return level + GenGaussRandFloat(0., 2);
@@ -93,7 +106,7 @@ static unsigned short GenerateNormLevel(float maxL, float minL) {
 static unsigned short __fastcall GetEZSavedLevelHooked(BGSEncounterZone* zone) {
 	unsigned short zoneLevel = zone->savedLevel;
 	if (zoneLevel == 0)
-		return SSEDeleveler::GetEncounterZoneLevelHooked(zone);
+		return SSEDelevelerInit::GetEncounterZoneLevelHooked(zone);
 	else
 		return CapFloatLevel(zoneLevel);
 }
@@ -142,7 +155,40 @@ static unsigned short GetPlayerItemLevelHooked(Actor* pPlayer) {
 	return GenerateNormLevel(99, 1);
 }
 
-unsigned short SSEDeleveler::GetEncounterZoneLevelHooked(BGSEncounterZone* zone) {
+int SSEDelevelerInit::GetKeyLevelHooked(ExtraLock* lockData, TESObjectREFR* pRef) {
+	int level = lockData->level;
+	if ((level != *sseDelevelerSingleton.lockLevel[kLockKey]) && ((lockData->flags & 4) != 0)) {
+		lockData->flags &= 0xFB;
+		unsigned short encLv;
+		if (!pRef) {
+			encLv = GeneratePoisLevel();
+		}
+		else {
+			encLv = sseDelevelerSingleton.pGetRefEncounterZoneLevel(pRef, false);
+		}
+		level += encLv * (int)(*sseDelevelerSingleton.lockEncLvMult);
+		if (level > 99) {
+			level = 99;
+		}
+		lockData->level = (byte)level;
+	}
+	return level;
+}
+
+int SSEDelevelerInit::GetKeyDiffHooked(ExtraLock* lockData, TESObjectREFR* pRef) {
+	auto level = GetKeyLevelHooked(lockData, pRef);
+	if (level <= *sseDelevelerSingleton.lockLevel[kLockEasy])
+		return 0;
+	if (level <= *sseDelevelerSingleton.lockLevel[kLockAppre])
+		return 1;
+	if (level <= *sseDelevelerSingleton.lockLevel[kLockAdept])
+		return 2;
+	if (level <= *sseDelevelerSingleton.lockLevel[kLockExpert])
+		return 3;
+	return (level > *sseDelevelerSingleton.lockLevel[kLockMaster]) + 4;
+}
+
+unsigned short SSEDelevelerInit::GetEncounterZoneLevelHooked(BGSEncounterZone* zone) {
 	unsigned short result;
 
 	byte minLevel = zone->minLevel;
@@ -152,7 +198,7 @@ unsigned short SSEDeleveler::GetEncounterZoneLevelHooked(BGSEncounterZone* zone)
 	return result;
 }
 
-unsigned short SSEDeleveler::GetActorDataLevelHooked(TESActorBaseData *pActorData) {
+unsigned short SSEDelevelerInit::GetActorDataLevelHooked(TESActorBaseData *pActorData) {
 	auto result = pActorData->level;
 	if ((pActorData->flags >> kFlag_PCLevelMult & 1) != 0) {
 		result = GetRandLevel(pActorData);
@@ -160,7 +206,7 @@ unsigned short SSEDeleveler::GetActorDataLevelHooked(TESActorBaseData *pActorDat
 	return result;
 }
 
-unsigned short SSEDeleveler::GetActorLevelHooked(Actor* pRef) {
+unsigned short SSEDelevelerInit::GetActorLevelHooked(Actor* pRef) {
 	auto base = (TESNPC*)pRef->baseForm;
 	if ((base->actorData.flags >> kFlag_PCLevelMult & 1) != 0)
 		if ((base->actorData.flags >> kFlag_Unique & 1) != 0)
@@ -171,10 +217,17 @@ unsigned short SSEDeleveler::GetActorLevelHooked(Actor* pRef) {
 		return base->actorData.level;
 }
 
-const char* SSEDeleveler::ErrorMessage[SSEDeleveler::NumError] = { "errFindModule", "errFindGetEncounterZoneLevel", "errFindGetScaledActorLevel",
-"errFindGetEZSavedLv", "errFindGetLevItemEnLv", "errFindGetPlLv", "errAllocateHooker", "errHookGetEncounterZoneLevel", "errHookGetScaledActorLevel" };
+void SSEDelevelerInit::ReadGlobalAddresses() {
+	sseDelevelerSingleton.lockLevel[kLockKey] = (char*)(*(unsigned int*)(GetKeyLv + 0xe) + GetKeyLv + 0x12);
+	sseDelevelerSingleton.lockEncLvMult = (float*)(*(unsigned int*)(GetKeyLv + 0x3e) + GetKeyLv + 0x42);
+	sseDelevelerSingleton.lockLevel[kLockEasy] = (char*)(*(unsigned int*)(GetKeyLv + 0x53) + GetKeyLv + 0x57);
+	sseDelevelerSingleton.lockLevel[kLockAppre] = (char*)(*(unsigned int*)(GetKeyLv + 0x63) + GetKeyLv + 0x67);
+	sseDelevelerSingleton.lockLevel[kLockAdept] = (char*)(*(unsigned int*)(GetKeyLv + 0x76) + GetKeyLv + 0x7a);
+	sseDelevelerSingleton.lockLevel[kLockExpert] = (char*)(*(unsigned int*)(GetKeyLv + 0x89) + GetKeyLv + 0x8d);
+	sseDelevelerSingleton.lockLevel[kLockMaster] = (char*)(*(unsigned int*)(GetKeyLv + 0x9e) + GetKeyLv + 0xa2);
+}
 
-int SSEDeleveler::Hook() {
+int SSEDelevelerInit::Hook() {
 #pragma pack(push, 1)
 	struct TrampolineCode {
 		// jmp [rip]
@@ -227,6 +280,12 @@ int SSEDeleveler::Hook() {
 	TrampolineCode GetScaledActorLevelHookCode((uintptr_t)GetActorDataLevelHooked);
 	SafeWriteBuf((uintptr_t)GetScaledActorLevelPtr, &GetScaledActorLevelHookCode, sizeof(TrampolineCode));
 
+	TrampolineCode GetKeyDiffHookCode((uintptr_t)GetKeyDiffHooked);
+	SafeWriteBuf(GetKeyLv[0], &GetKeyDiffHookCode, sizeof(TrampolineCode));
+
+	TrampolineCode GetKeyLevelHookCode((uintptr_t)GetKeyLevelHooked);
+	SafeWriteBuf(GetKeyLv[1], &GetKeyLevelHookCode, sizeof(TrampolineCode));
+
 	TramCallCode GetEZSavedLevelHookCode((uintptr_t)GetEZSavedLevelHooked,(UInt8)0x10);
 	SafeWriteBuf(GetEZSavedLvPtr, &GetEZSavedLevelHookCode, sizeof(TramCallCode));
 	WriteNOP(GetEZSavedLvPtr + sizeof(TramCallCode), 4);
@@ -260,18 +319,18 @@ int SSEDeleveler::Hook() {
 	{
 		*trampolineCode = TrampolineCode((uintptr_t)GetPlayerEncLevelHooked);
 
-		for (size_t i = 0; i < sizeof(GetPlLv) / sizeof(uintptr_t); i++) {
+		//for (size_t i = 0; i < sizeof(GetPlLv) / sizeof(uintptr_t); i++) {
 
 			uintptr_t	trampolineAddr = uintptr_t(trampolineCode);
-			uintptr_t	nextInstr = GetPlLv[i] + sizeof(HookCode);
+			uintptr_t	nextInstr = GetPlLv + sizeof(HookCode);
 			ptrdiff_t	trampolineDispl = trampolineAddr - nextInstr;
 
 			// should never fail because we're branching in to the trampoline
 			ASSERT((trampolineDispl >= _I32_MIN) && (trampolineDispl <= _I32_MAX));
 
 			HookCode hookCode(trampolineDispl, 0xE8);
-			SafeWriteBuf(GetPlLv[i], &hookCode, sizeof(HookCode));
-		}
+			SafeWriteBuf(GetPlLv, &hookCode, sizeof(HookCode));
+		//}
 	}
 	else
 		return errAllocateHooker;
@@ -304,7 +363,7 @@ int SSEDeleveler::Hook() {
 	return 0;
 }
 
-int SSEDeleveler::FindSSEBase() {
+int SSEDelevelerInit::FindSSEBase() {
 	auto process = GetCurrentProcess();
 #ifdef _DEBUG
 	char buf[30];
@@ -335,7 +394,7 @@ int SSEDeleveler::FindSSEBase() {
 	return 1;
 }
 
-int SSEDeleveler::Init() {
+int SSEDelevelerInit::operator()() {
 	if (FindSSEBase() > 0)
 		return errFindModule;
 
@@ -363,6 +422,7 @@ int SSEDeleveler::Init() {
 		startAddress = GetLevItemEnLv[i]+10;
 	}
 
+	/*
 	scanModuleLength = moduleLength;
 	startAddress = this->baseAddress;
 	for (size_t i = 0; i < 2; i++) {
@@ -372,12 +432,13 @@ int SSEDeleveler::Init() {
 		GetPlLv[i] += GetPlLvOff1;
 		scanModuleLength = scanModuleLength + startAddress - GetPlLv[i];
 		startAddress = GetPlLv[i];
-	}
-	GetPlLv[2] = (uintptr_t)FindPattern((char*)GetEncounterZoneLevelPtr+50, GetPlLvSig2, GetPlLvMask2
+	}*/
+
+	GetPlLv = (uintptr_t)FindPattern((char*)GetEncounterZoneLevelPtr+50, GetPlLvSig2, GetPlLvMask2
 		, moduleLength+this->baseAddress-(uintptr_t)GetEncounterZoneLevelPtr-50);
-	if (GetPlLv[2] == 0)
-		return errFindGetLevItemEnLv;
-	GetPlLv[2] += GetPlLvOff2;
+	if (GetPlLv == 0)
+		return errFindGetPlLv;
+	GetPlLv += GetPlLvOff2;
 
 	GetPlItemLv[0] = (uintptr_t)FindPattern((char*)this->baseAddress, GetPlLvSig3, GetPlLvMask3, moduleLength);
 	GetPlItemLv[1] = (uintptr_t)FindPattern((char*)GetPlItemLv[0] + 50, GetPlLvSig4, GetPlLvMask4
@@ -385,6 +446,17 @@ int SSEDeleveler::Init() {
 	GetPlItemLv[2] = (uintptr_t)FindPattern((char*)this->baseAddress, GetPlLvSig5, GetPlLvMask5, moduleLength);
 	GetPlItemLv[2] += GetPlLvOff5;
 	GetPlItemLv[3] = (uintptr_t)FindPattern((char*)GetPlItemLv[2], GetPlLvSig6, GetPlLvMask6, moduleLength);
+
+	
+	scanModuleLength = moduleLength;
+	startAddress = this->baseAddress;
+	for (size_t i = 0; i < 2; i++) {
+		GetKeyLv[i] = (uintptr_t)FindPattern((char*)startAddress, GetKeyLvSig, GetKeyLvMask, scanModuleLength);
+		if (GetKeyLv[i] == 0)
+			return errFindGetKeyLv;
+		scanModuleLength = scanModuleLength + startAddress - GetKeyLv[i];
+		startAddress = GetKeyLv[i];
+	}
 
 #ifdef _DEBUG
 	char buf[30];
@@ -396,5 +468,11 @@ int SSEDeleveler::Init() {
 	_MESSAGE(buf);
 #endif
 
+	ReadGlobalAddresses();
+
 	return Hook();
 }
+
+const char* SSEDelevelerInit::ErrorMessage[SSEDelevelerInit::NumError] = { "errFindModule", "errFindGetEncounterZoneLevel", "errFindGetScaledActorLevel",
+"errFindGetEZSavedLv", "errFindGetLevItemEnLv", "errFindGetPlLv", "errFindGetKeyLv",
+"errAllocateHooker", "errHookGetEncounterZoneLevel", "errHookGetScaledActorLevel" };
