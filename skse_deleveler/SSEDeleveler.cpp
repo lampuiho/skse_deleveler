@@ -23,7 +23,7 @@ static const char* GetEZSavedLvMask = "xxxxx";
 static const char* GetLevItemEnLvSig = "\xe8\x00\x00\x00\x00\xeb\x0c\x48\x85\xc9";
 static const char* GetLevItemEnLvMask = "x????xxxxx";
 
-static const char* GetKeyLvSig = "40 53 48 83 EC 20 0F B6 19";//+1349D0, +134A90
+static const char* GetKeyLvSig = "\x40\x53\x48\x83\xEC\x20\x0F\xB6\x19";//+1349D0, +134A90
 static const char* GetKeyLvMask = "xxxxxxxxx";
 
 static const char* GetPlLvSig1 = "\x48\x8b\xc8\xe8\x00\x00\x00\x00\xeb\x0c"; //+134a02,+134ac2
@@ -218,13 +218,14 @@ unsigned short SSEDelevelerInit::GetActorLevelHooked(Actor* pRef) {
 }
 
 void SSEDelevelerInit::ReadGlobalAddresses() {
-	sseDelevelerSingleton.lockLevel[kLockKey] = (char*)(*(unsigned int*)(GetKeyLv + 0xe) + GetKeyLv + 0x12);
-	sseDelevelerSingleton.lockEncLvMult = (float*)(*(unsigned int*)(GetKeyLv + 0x3e) + GetKeyLv + 0x42);
-	sseDelevelerSingleton.lockLevel[kLockEasy] = (char*)(*(unsigned int*)(GetKeyLv + 0x53) + GetKeyLv + 0x57);
-	sseDelevelerSingleton.lockLevel[kLockAppre] = (char*)(*(unsigned int*)(GetKeyLv + 0x63) + GetKeyLv + 0x67);
-	sseDelevelerSingleton.lockLevel[kLockAdept] = (char*)(*(unsigned int*)(GetKeyLv + 0x76) + GetKeyLv + 0x7a);
-	sseDelevelerSingleton.lockLevel[kLockExpert] = (char*)(*(unsigned int*)(GetKeyLv + 0x89) + GetKeyLv + 0x8d);
-	sseDelevelerSingleton.lockLevel[kLockMaster] = (char*)(*(unsigned int*)(GetKeyLv + 0x9e) + GetKeyLv + 0xa2);
+	sseDelevelerSingleton.lockLevel[kLockKey] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0xe)) + GetKeyLv[0] + 0x12);
+	sseDelevelerSingleton.lockEncLvMult = (float*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x3e)) + GetKeyLv[0] + 0x42);
+	sseDelevelerSingleton.lockLevel[kLockEasy] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x53)) + GetKeyLv[0] + 0x57);
+	sseDelevelerSingleton.lockLevel[kLockAppre] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x63)) + GetKeyLv[0] + 0x67);
+	sseDelevelerSingleton.lockLevel[kLockAdept] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x76)) + GetKeyLv[0] + 0x7a);
+	sseDelevelerSingleton.lockLevel[kLockExpert] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x89)) + GetKeyLv[0] + 0x8d);
+	sseDelevelerSingleton.lockLevel[kLockMaster] = (char*)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x9e)) + GetKeyLv[0] + 0xa2);
+	sseDelevelerSingleton.pGetRefEncounterZoneLevel = (GetRefEncounterZoneLevel)((uintptr_t)(*(unsigned int*)(GetKeyLv[0] + 0x24)) + GetKeyLv[0] + 0x29);
 }
 
 int SSEDelevelerInit::Hook() {
@@ -454,8 +455,8 @@ int SSEDelevelerInit::operator()() {
 		GetKeyLv[i] = (uintptr_t)FindPattern((char*)startAddress, GetKeyLvSig, GetKeyLvMask, scanModuleLength);
 		if (GetKeyLv[i] == 0)
 			return errFindGetKeyLv;
-		scanModuleLength = scanModuleLength + startAddress - GetKeyLv[i];
-		startAddress = GetKeyLv[i];
+		scanModuleLength = scanModuleLength + startAddress - GetKeyLv[i] - 10;
+		startAddress = GetKeyLv[i] + 10;
 	}
 
 #ifdef _DEBUG
