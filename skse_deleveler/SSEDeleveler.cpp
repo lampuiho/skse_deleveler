@@ -204,8 +204,8 @@ unsigned short SSEDelevelerInit::GetFluctuatedActorLevel(Actor *pRef) {
 	{
 		auto result = GetRandLevel(pActorData);
 		if ((base->actorData.flags >> kFlag_Unique & 1) != 0) {
-			gDelevelerStorageSingleton->AddUnique(pRef, result, pActorData->level);
-			_MESSAGE("%x's level changed from %d to %d", pRef->formID, pActorData->level, result);
+			gDelevelerStorageSingleton->AddUnique(base, result, pActorData->level);
+			_MESSAGE("%x's level changed from %d to %d", base->formID, pActorData->level, result);
 			pActorData->level = result;
 			pActorData->flags &= ~(1UL << kFlag_PCLevelMult);
 		}
@@ -221,8 +221,8 @@ unsigned short SSEDelevelerInit::GetActorLevelHooked(Actor* pRef) {
 	if ((pActorData->flags >> kFlag_PCLevelMult & 1) != 0) {
 		auto result = GetRandLevel(pActorData);
 		if ((base->actorData.flags >> kFlag_Unique & 1) != 0) {
-			gDelevelerStorageSingleton->AddUnique(pRef, result, pActorData->level);
-			_MESSAGE("%x's level changed from %d to %d", pRef->formID, pActorData->level, result);
+			gDelevelerStorageSingleton->AddUnique(base, result, pActorData->level);
+			_MESSAGE("%x's level changed from %d to %d", base->formID, pActorData->level, result);
 			pActorData->level = result;
 			pActorData->flags &= ~(1UL << kFlag_PCLevelMult);
 		}

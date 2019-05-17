@@ -29,6 +29,18 @@ void SSEDelevelerStorage::AddLock(TESForm* form, uint16_t lvl, uint16_t lvlo) {
 	lockLv.insert_or_assign(form->formID, std::make_tuple(form, lvl, lvlo));
 }
 
+static bool CheckChar(TESForm* form) {
+	bool result = form->formType == kFormType_NPC;
+	if (!result) _ERROR("%x expected NPC type but got %x instead",form->formID, form->formType);
+	return result;
+}
+
+static bool CheckLock(TESForm* form) {
+	bool result = form->formType == kFormType_Reference;
+	if (!result) _ERROR("%x expected ref type but got %x instead", form->formID, form->formType);
+	return result;
+}
+
 void SSEDelevelerStorage::Clear(SKSESerializationInterface * intfc) {
 	_MESSAGE("Clearing Unique");
 	for (auto obj : gDelevelerStorageSingleton->uniqActorLv)	{
@@ -38,15 +50,22 @@ void SSEDelevelerStorage::Clear(SKSESerializationInterface * intfc) {
 			_ERROR("%x has different id than one from pointer %x!", id, form->formID);
 			form = gDelevelerSingleton.pLookupFormByID(id);
 		}
-		auto pAct = (Actor*)form;
-		auto base = (TESNPC*)pAct->baseForm;
-		if (!base) {
+
+		//if (!CheckChar(form)) continue;
+
+		TESNPC* pBase;
+		if (form->formType == kFormType_Character)
+			pBase = (TESNPC*)((Actor*)form)->baseForm;
+		else
+			pBase = (TESNPC*)form;
+
+		if (!pBase) {
 			_MESSAGE("%x has no base form!", id);
 			continue;
 		}
-		auto pActorData = &base->actorData;
+		auto pActorData = &pBase->actorData;
 		if (!pActorData) {
-			_MESSAGE("%x of type %x has no actorData!", base->formID, base->formType);
+			_MESSAGE("%x of type %x has no actorData!", pBase->formID, pBase->formType);
 			continue;
 		}
 		if ((pActorData->flags >> kFlag_Unique & 1) == 0)
@@ -68,6 +87,8 @@ void SSEDelevelerStorage::Clear(SKSESerializationInterface * intfc) {
 			_ERROR("%x has different id than one from pointer %x!", id, form->formID);
 			form = gDelevelerSingleton.pLookupFormByID(id);
 		}
+
+		if (!CheckLock(form)) continue;
 		auto pRef = (TESObjectREFR*)form;
 		auto xloc = gDelevelerSingleton.pGetXLOCRef(pRef);
 		if (xloc == 0)
@@ -125,10 +146,24 @@ static void loadUniqV1(SKSESerializationInterface *intfc, UInt32 length) {
 
 	for (auto obj : buf) {
 		TESForm* form = gDelevelerSingleton.pLookupFormByID(obj.id);
+		if (!form) { _ERROR("%x returned null",obj.id); continue; }
+		//if (!CheckChar(form)) continue;
 
-		auto pAct = (Actor*)form;
-		auto base = (TESNPC*)pAct->baseForm;
-		auto pActorData = &base->actorData;
+		TESNPC* pBase;
+		if (form->formType == kFormType_Character)
+			pBase = (TESNPC*)((Actor*)form)->baseForm;
+		else
+			pBase = (TESNPC*)form;
+
+		if (!pBase) {
+			_ERROR("%x has no base form!", obj.id);
+			continue;
+		}
+		auto pActorData = &pBase->actorData;
+		if (!pActorData) {
+			_ERROR("%x of type %x has no actorData!", pBase->formID, pBase->formType);
+			continue;
+		}
 
 		if ((pActorData->flags >> kFlag_Unique & 1) == 0)
 			_ERROR("%x is not unique!", obj.id);
@@ -136,7 +171,7 @@ static void loadUniqV1(SKSESerializationInterface *intfc, UInt32 length) {
 			UInt16 lvlo = pActorData->level;
 			pActorData->flags &= ~(1UL << kFlag_PCLevelMult);
 			pActorData->level = obj.lv;
-			gDelevelerStorageSingleton->AddUnique(form, obj.lv, lvlo);
+			gDelevelerStorageSingleton->AddUnique(pBase, obj.lv, lvlo);
 		}
 	}
 }
@@ -148,6 +183,8 @@ static void loadLockV1(SKSESerializationInterface * intfc, UInt32 length) {
 
 	for (auto obj : buf) {
 		TESForm* form = gDelevelerSingleton.pLookupFormByID(obj.id);
+
+		if (!CheckLock(form)) continue;
 
 		auto pRef = (TESObjectREFR*)form;
 		auto xloc = gDelevelerSingleton.pGetXLOCRef(pRef);
