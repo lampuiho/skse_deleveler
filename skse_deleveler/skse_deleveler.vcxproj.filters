@@ -32,6 +32,9 @@
     <ClCompile Include="Distribution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SSEDelevelerStorage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SSEDeleveler.h">
@@ -41,6 +44,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Distribution.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEDelevelerStorage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEDelevelerGlobal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

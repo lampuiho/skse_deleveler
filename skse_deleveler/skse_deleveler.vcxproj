@@ -77,11 +77,14 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MemUtil.cpp" />
     <ClCompile Include="SSEDeleveler.cpp" />
+    <ClCompile Include="SSEDelevelerStorage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Distribution.h" />
     <ClInclude Include="MemUtil.h" />
     <ClInclude Include="SSEDeleveler.h" />
+    <ClInclude Include="SSEDelevelerGlobal.h" />
+    <ClInclude Include="SSEDelevelerStorage.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
