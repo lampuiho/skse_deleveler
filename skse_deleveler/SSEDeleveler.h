@@ -50,6 +50,7 @@ class SSEDelevelerInit {
 	void ReadGlobalAddresses();
 	int Hook();
 	int FindSSEBase();
+	static unsigned short GenSaveActorLvl(Actor*);
 
 public:
 	enum ErrorCode {

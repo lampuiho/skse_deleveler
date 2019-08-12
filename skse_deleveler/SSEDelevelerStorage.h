@@ -13,7 +13,7 @@ class SSEDelevelerStorage {
 		kRespawn
 	};
 	// ID, current level, original level
-	std::map<uint32_t,std::tuple<TESForm*,uint16_t, uint16_t>> uniqActorLv;
+	std::map<TESForm*, std::pair<uint16_t, uint16_t>> uniqActorLv;
 	std::map<uint32_t, std::tuple<TESForm*, uint16_t, uint16_t>> lockLv;
 	SKSESerializationInterface*	serialization;
 	static void Clear(SKSESerializationInterface *intfc);
@@ -24,6 +24,7 @@ class SSEDelevelerStorage {
 public:
 	SSEDelevelerStorage(SKSESerializationInterface* serialization) : serialization(serialization) {}
 	int Init();
+	void TryRemove(TESForm*);
 	void AddUnique(TESForm*, uint16_t, uint16_t);
 	void AddLock(TESForm*, uint16_t, uint16_t);
 };

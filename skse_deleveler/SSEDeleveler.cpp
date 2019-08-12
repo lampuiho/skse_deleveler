@@ -1,8 +1,8 @@
 #include <common/IPrefix.h>
 #include <skse64/GameReferences.h>
 
-#include "skse64_common/BranchTrampoline.h"
-#include "skse64_common/SafeWrite.h"
+#include <skse64_common/BranchTrampoline.h>
+#include <skse64_common/SafeWrite.h>
 
 #include "SSEDeleveler.h"
 #include "MemUtil.h"
@@ -197,20 +197,35 @@ unsigned short SSEDelevelerInit::GetEncounterZoneLevelHooked(BGSEncounterZone* z
 	return result;
 }
 
+unsigned short SSEDelevelerInit::GenSaveActorLvl(Actor* pRef) {
+	auto base = (TESNPC*)pRef->baseForm;
+	auto pActorData = &base->actorData;
+	unsigned short result;
+	if ((base->actorData.flags >> kFlag_Unique & 1) != 0) {
+		if (pRef->IsDead(1)) {
+			gDelevelerStorageSingleton->TryRemove(base);
+			result = pActorData->level / 1000;
+		}
+		else {
+			result = GetRandLevel(pActorData);
+			gDelevelerStorageSingleton->AddUnique(base, result, pActorData->level);
+#ifdef _DEBUG
+			_MESSAGE("%x's level changed from %d to %d", base->formID, pActorData->level, result);
+#endif
+			pActorData->level = result;
+		}
+		pActorData->flags &= ~(1UL << kFlag_PCLevelMult);
+	}
+	else
+		result = GetRandLevel(pActorData);
+	return result;
+}
+
 unsigned short SSEDelevelerInit::GetFluctuatedActorLevel(Actor *pRef) {
 	auto base = (TESNPC*)pRef->baseForm;
 	auto pActorData = &base->actorData;
 	if ((pActorData->flags >> kFlag_PCLevelMult & 1) != 0)
-	{
-		auto result = GetRandLevel(pActorData);
-		if ((base->actorData.flags >> kFlag_Unique & 1) != 0) {
-			gDelevelerStorageSingleton->AddUnique(base, result, pActorData->level);
-			_MESSAGE("%x's level changed from %d to %d", base->formID, pActorData->level, result);
-			pActorData->level = result;
-			pActorData->flags &= ~(1UL << kFlag_PCLevelMult);
-		}
-		return result;
-	}
+		return GenSaveActorLvl(pRef);
 	else
 		return CapFloatLevel(pActorData->level);
 }
@@ -218,16 +233,8 @@ unsigned short SSEDelevelerInit::GetFluctuatedActorLevel(Actor *pRef) {
 unsigned short SSEDelevelerInit::GetActorLevelHooked(Actor* pRef) {
 	auto base = (TESNPC*)pRef->baseForm;
 	auto pActorData = &base->actorData;
-	if ((pActorData->flags >> kFlag_PCLevelMult & 1) != 0) {
-		auto result = GetRandLevel(pActorData);
-		if ((base->actorData.flags >> kFlag_Unique & 1) != 0) {
-			gDelevelerStorageSingleton->AddUnique(base, result, pActorData->level);
-			_MESSAGE("%x's level changed from %d to %d", base->formID, pActorData->level, result);
-			pActorData->level = result;
-			pActorData->flags &= ~(1UL << kFlag_PCLevelMult);
-		}
-		return result;
-	}
+	if ((pActorData->flags >> kFlag_PCLevelMult & 1) != 0)
+		return GenSaveActorLvl(pRef);
 	else
 		return pActorData->level;
 }
@@ -298,7 +305,7 @@ int SSEDelevelerInit::operator()() {
 	if (gDelevelerSingleton.pGetXLOCRef == 0) return errFindGetKeyLv;
 	int* uLookupFormOff = (int*)((uintptr_t)FindPattern((char*)startAddress, LookUpFormIDSig, LookUpFormIDMask, scanModuleLength)
 		+ LookUpFormOff);
-	gDelevelerSingleton.pLookupFormByID = (_LookupFormByID)((intptr_t)uLookupFormOff + (*uLookupFormOff + 0x4));
+	gDelevelerSingleton.pLookupFormByID = (_LookupFormByID)((intptr_t)uLookupFormOff + (*uLookupFormOff + (intptr_t)0x4));
 	if (gDelevelerSingleton.pLookupFormByID == 0) return errFindLookUp;
 
 #ifdef _DEBUG

@@ -13,13 +13,11 @@ SSEDelevelerStorage *gDelevelerStorageSingleton;
 extern "C" {
 
 	bool SKSEPlugin_Query(const SKSEInterface * skse, PluginInfo * info) {	// Called by SKSE to learn about this plugin and check that it's safe to load it
-//#ifdef _DEBUG
+#ifdef _DEBUG
 		gLog.OpenRelative(CSIDL_MYDOCUMENTS, "\\My Games\\Skyrim Special Edition\\SKSE\\skse_deleveler.log");
 		gLog.SetPrintLevel(IDebugLog::kLevel_DebugMessage);
 		gLog.SetLogLevel(IDebugLog::kLevel_Error);
-
-//		_MESSAGE(g_pluginName);
-//#endif
+#endif
 
 		// populate info structure
 		info->infoVersion = PluginInfo::kInfoVersion;
